@@ -1,5 +1,5 @@
 # C++ Minecraft Client
 
-Uses asio to do networking
+Uses SDL_net to do networking
 
 Work-in-progress
