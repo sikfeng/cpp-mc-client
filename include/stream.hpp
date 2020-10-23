@@ -40,7 +40,7 @@ public:
 	long long ReadVarLong();
 	std::vector<unsigned char> ReadEntityMetadata();
 	SlotDataType ReadSlot();
-	std::vector<unsigned char> ReadNbtTag();
+	//std::vector<unsigned char> ReadNbtTag();
 	Vector ReadPosition();
 	unsigned char ReadAngle();
 	UUID ReadUUID();
@@ -66,7 +66,7 @@ public:
 	void WriteVarLong(long long value);
 	void WriteEntityMetadata(const std::vector<unsigned char> &value);
 	void WriteSlot(const SlotDataType &value);
-	void WriteNbtTag(const std::vector<unsigned char> &value);
+	//void WriteNbtTag(const std::vector<unsigned char> &value);
 	void WritePosition(const Vector &value);
 	void WriteAngle(unsigned char value);
 	void WriteUUID(const UUID &value);

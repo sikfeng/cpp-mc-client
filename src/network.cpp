@@ -49,12 +49,12 @@ std::shared_ptr<Packet> Network::ReceivePacket(ConnectionState state, bool useCo
 
 			int status = inflate(&stream, Z_FINISH);
 			switch (status) {
-			case Z_STREAM_END:
-				break;
-			case Z_OK:                            
-			case Z_STREAM_ERROR:
-			case Z_BUF_ERROR:
-				throw std::runtime_error("Zlib decompression error: " + std::to_string(status));
+        case Z_STREAM_END:
+          break;
+        case Z_OK:                            
+        case Z_STREAM_ERROR:
+        case Z_BUF_ERROR:
+          throw std::runtime_error("Zlib decompression error: " + std::to_string(status));
 			}
 
 			if (inflateEnd(&stream) != Z_OK)
@@ -76,6 +76,7 @@ std::shared_ptr<Packet> Network::ReceivePacket(ConnectionState state, bool useCo
 }
 
 void Network::SendPacket(Packet &packet, int compressionThreshold) {
+  LOG(INFO) << "Sending Packet";
 	if (compressionThreshold >= 0) {
 		StreamCounter packetSize;
 		packetSize.WriteVarInt(packet.GetPacketId());
@@ -97,6 +98,7 @@ void Network::SendPacket(Packet &packet, int compressionThreshold) {
 		stream->WriteVarInt(packet.GetPacketId());
 		packet.ToStream(stream.get());
 	}	
+  LOG(INFO) << "Sent Packet ID: " << packet.GetPacketId();
 }
 
 std::shared_ptr<Packet> Network::ReceivePacketByPacketId(int packetId, ConnectionState state, StreamInput &stream) {
@@ -136,61 +138,66 @@ std::shared_ptr<Packet> Network::ReceivePacketByPacketId(int packetId, Connectio
 			packet = ParsePacketPlay((PacketNamePlayCB) packetId);
 			break;
 	}
-	if (packet.get() != nullptr)
+	if (packet.get() != nullptr) {
 		packet->FromStream(&stream);
+  }
 	return packet;
 }
 
 std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
+  LOG(INFO) << "Packet ID Received: " << id;
 	switch (id) {
-		case SpawnObject:
-            return std::make_shared<PacketSpawnObject>();
+		case SpawnEntity:
+      return std::make_shared<PacketSpawnEntity>();
 		case SpawnExperienceOrb:
 			break;
-		case SpawnGlobalEntity:
+    case SpawnWeatherEntity:
 			break;
-		case SpawnMob:
-            return std::make_shared<PacketSpawnMob>();
-		case SpawnPainting:
+    case SpawnLivingEntity:
+			break;
+    case SpawnPainting:
 			break;
 		case SpawnPlayer:
-            return std::make_shared<PacketSpawnPlayer>();
-		case AnimationCB:
+      return std::make_shared<PacketSpawnPlayer>();
+		case EntityAnimationCB:
 			break;
 		case Statistics:
 			break;
+    case AcknowledgePlayerDigging:
+      break;
 		case BlockBreakAnimation:
-			break;
-		case UpdateBlockEntity:
+      break;
+    case BlockEntityData:
 			break;
 		case BlockAction:
 			break;
 		case BlockChange:
-            return std::make_shared<PacketBlockChange>();
+      return std::make_shared<PacketBlockChange>();
 		case BossBar:
-			break;
+      break;
+      return std::make_shared<PacketBossBar>();
 		case ServerDifficulty:
 			break;
+		case ChatMessageCB:
+      return std::make_shared<PacketChatMessageCB>();
+		case MultiBlockChange:
+      return std::make_shared<PacketMultiBlockChange>();
 		case TabCompleteCB:
 			break;
-		case ChatMessageCB:
-            return std::make_shared<PacketChatMessageCB>();
-		case MultiBlockChange:
-            return std::make_shared<PacketMultiBlockChange>();
-		case ConfirmTransactionCB:
-            return std::make_shared<PacketConfirmTransactionCB>();
+    case DeclareCommands:
+      break;
+		case WindowConfirmationCB:
+      return std::make_shared<PacketWindowConfirmationCB>();
 		case CloseWindowCB:
-            return std::make_shared<PacketCloseWindowCB>();
-		case OpenWindow:
-            return std::make_shared<PacketOpenWindow>();
+      return std::make_shared<PacketCloseWindowCB>();
 		case WindowItems:
-            return std::make_shared<PacketWindowItems>();
+      return std::make_shared<PacketWindowItems>();
 		case WindowProperty:
-            return std::make_shared<PacketWindowProperty>();
+      return std::make_shared<PacketWindowProperty>();
 		case SetSlot:
-            return std::make_shared<PacketSetSlot>();
+      return std::make_shared<PacketSetSlot>();
 		case SetCooldown:
-			break;
+      return std::make_shared<PacketSetCooldown>();
 		case PluginMessageCB:
 			break;
 		case NamedSoundEffect:
@@ -202,45 +209,60 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 		case Explosion:
 			break;
 		case UnloadChunk:
-            return std::make_shared<PacketUnloadChunk>();
+      return std::make_shared<PacketUnloadChunk>();
 		case ChangeGameState:
 			break;
+		case OpenHorseWindow:
+      break;
 		case KeepAliveCB:
 			return std::make_shared<PacketKeepAliveCB>();
 		case ChunkData:
 			return std::make_shared<PacketChunkData>();
 		case Effect:
+			return std::make_shared<PacketEffect>();
 			break;
 		case Particle:
 			break;
+    case UpdateLight:
+      break;
 		case JoinGame:
 			return std::make_shared<PacketJoinGame>();
-		case Map:
+		case MapData:
 			break;
-		case EntityRelativeMove:
-            return std::make_shared<PacketEntityRelativeMove>();
-		case EntityLookAndRelativeMove:
-            return std::make_shared<PacketEntityLookAndRelativeMove>();
-		case EntityLook:
-            return std::make_shared<PacketEntityLook>();
-		case EntityCB:
-			break;
+    case TradeList:
+      break;
+		case EntityPosition:
+      return std::make_shared<PacketEntityPosition>();
+		case EntityPositionAndRotation:
+      return std::make_shared<PacketEntityPositionAndRotation>();
+		case EntityRotation:
+      return std::make_shared<PacketEntityRotation>();
+    case EntityMovement:
+      break;
 		case VehicleMove:
+			break;
+		case OpenBook:
+			break;
+		case OpenWindow:
 			break;
 		case OpenSignEditor:
 			break;
+    case CraftRecipeResponse:
+      break;
 		case PlayerAbilitiesCB:
 			break;
 		case CombatEvent:
 			break;
-		case PlayerListItem:
-			break;
+    case PlayerInfo:
+      break;
+    case FacePlayer:
+      break;
 		case PlayerPositionAndLookCB:
 			return std::make_shared<PacketPlayerPositionAndLookCB>();
-		case UseBed:
-			break;
+    case UnlockRecipes:
+      break;
 		case DestroyEntities:
-            return std::make_shared<PacketDestroyEntities>();
+      return std::make_shared<PacketDestroyEntities>();
 		case RemoveEntityEffect:
 			break;
 		case ResourcePackSend:
@@ -249,12 +271,18 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 			break;
 		case EntityHeadLook:
 			break;
+    case SelectAdvancementTab:
+      break;
 		case WorldBorder:
 			break;
 		case Camera:
 			break;
 		case HeldItemChangeCB:
 			break;
+    case UpdateViewPosition:
+      break;
+    case UpdateViewDistance:
+      break;
 		case DisplayScoreboard:
 			break;
 		case EntityMetadata:
@@ -262,8 +290,7 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 		case AttachEntity:
 			break;
 		case EntityVelocity:
-            return std::make_shared<PacketEntityVelocity>();
-			break;
+      return std::make_shared<PacketEntityVelocity>();
 		case EntityEquipment:
 			break;
 		case SetExperience:
@@ -281,28 +308,34 @@ std::shared_ptr<Packet> Network::ParsePacketPlay(PacketNamePlayCB id) {
 		case SpawnPosition:
 			return std::make_shared<PacketSpawnPosition>();
 		case TimeUpdate:
-            return std::make_shared<PacketTimeUpdate>();
+      return std::make_shared<PacketTimeUpdate>();
 		case Title:
 			break;
+		case EntitySoundEffect:
+      break;
 		case SoundEffect:
-			break;
+      return std::make_shared<PacketSoundEffect>();
+    case StopSound:
+      break;
 		case PlayerListHeaderAndFooter:
 			break;
 		case CollectItem:
 			break;
 		case EntityTeleport:
-            return std::make_shared<PacketEntityTeleport>();
-			break;
+      return std::make_shared<PacketEntityTeleport>();
+    case Advancements:
+      break;
 		case EntityProperties:
 			break;
 		case EntityEffect:
 			break;
-		case UnlockRecipes:
+		case DeclareRecipes:
 			break;
-		case SelectAdvancementTab:
+		case Tags:
 			break;
-		case Advancements:
-			break;
+    default:
+      LOG(INFO) << "Unidentifiable Packet ID: " << id;
+      return nullptr;
 	}
 	return nullptr;
 }

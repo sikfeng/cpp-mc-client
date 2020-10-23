@@ -7,6 +7,261 @@
 
 const int MAX_VARINT_LENGTH = 5;
 
+/*
+enum NBTTag {
+  TagEnd = 0,
+  TagByte = 1,
+  TagShort = 2,
+  TagInt = 3,
+  TagLong = 4,
+  TagFloat = 5,
+  TagDouble = 6,
+  TagByteArray = 7,
+  TagString = 8,
+  TagList = 9,
+  TagCompound = 10,
+  TagIntArray = 11,
+  TagLongArray = 12,
+};
+
+struct NBTTagType {
+  virtual void ReadPayload();
+
+  void ReadName() {
+    unsigned char NameLength;
+    socket->ReadData(&NameLength, 2);
+    for (int i = 0; i < NameLength; ++i) {
+      char c;
+      socket->ReadData(&c, 1);
+      name += c;
+    }
+  }
+
+  std::string name;
+  StreamInput *socket;
+
+  NBTTagType(StreamSocket *socket) : socket(socket) {}
+};
+
+struct NBTTagByte : NBTTagType {
+  void ReadPayload() override {
+    socket->ReadData((signed char) &Payload, 1);
+  }
+
+  signed char Payload;
+};
+
+struct NBTTagShort : NBTTagType {
+  void ReadPayload() override {
+    socket->ReadData(&Payload, 2);
+  }
+
+  short Payload;
+};
+
+struct NBTTagInt : NBTTagType {
+  void ReadPayload() override {
+    socket->ReadData(&Payload, 4);
+  }
+
+  int Payload;
+};
+
+struct NBTTagLong : NBTTagType {
+  void ReadPayload() override {
+    socket->ReadData(&Payload, 8);
+  }
+
+  long Payload;
+};
+
+struct NBTTagFloat : NBTTagType {
+  void ReadPayload() override {
+    socket->ReadData(&Payload, 4);
+  }
+
+  float Payload;
+};
+
+struct NBTTagDouble : NBTTagType {
+  void ReadPayload() override {
+    socket->ReadData(&Payload, 8);
+  }
+
+  double Payload;
+};
+
+struct NBTTagByteArray : NBTTagType {
+  void ReadPayload() override {
+    int size;
+    socket->ReadData(&size, 4);
+    for (int i = 0; i < size; ++i) {
+      char c;
+      socket->ReadData(&size, 2);
+      Payload.push_back(c);
+    }
+  }
+
+  std::vector<char> Payload;
+};
+
+struct NBTTagString : NBTTagType {
+  void ReadPayload() override {
+    unsigned short PayloadLength;
+    for (int i = 0; i < PayloadLength; ++i) {
+      char c;
+      socket->ReadData(&c, 1);
+      Payload += c;
+    }
+  }
+
+  std::string Payload;
+};
+
+struct NBTTagList : NBTTagType {
+  void ReadPayload() override {
+    unsigned short PayloadLength;
+    for (int i = 0; i < PayloadLength; ++i) {
+      signed char TagType;
+      TagType = socket->ReadByte();
+      NBTTagType NBTTag;
+      switch (TagType) {
+        case 0:
+          break;
+        case 1:
+          NBTTag = NBTTagByte(this->socket);
+          break;
+        case 2:
+          NBTTag = NBTTagShort(this->socket);
+          break;
+        case 3:
+          NBTTag = NBTTagInt(this->socket);
+          break;
+        case 4:
+          NBTTag = NBTTagLong(this->socket);
+          break;
+        case 5:
+          NBTTag = NBTTagFloat(this->socket);
+          break;
+        case 6:
+          NBTTag = NBTTagDouble(this->socket);
+          break;
+        case 7:
+          NBTTag = NBTTagByteArray(this->socket);
+          break;
+        case 8:
+          NBTTag = NBTTagString(this->socket);
+          break;
+        case 9:
+          NBTTag = NBTTagList(this->socket);
+          break;
+        case 10:
+          NBTTag = NBTTagCompound(this->socket);
+          break;
+        case 11:
+          NBTTag = NBTTagIntArray(this->socket);
+          break;
+        case 12:
+          NBTTag = NBTTagLongArray(this->socket);
+          break;
+        default:
+          LOG(INFO) << "Unrecognized NBT Tag ID: " << TagType;
+      }
+      NBTTag.ReadPayload();
+      Payload.push_back(NBTTag);
+    }
+  }
+
+  std::vector<NBTTagType> Payload;
+};
+
+struct NBTTagCompound : NBTTagType {
+  void ReadPayload() override {
+    while (true) {
+      signed char TagType;
+      TagType = socket->ReadByte();
+      NBTTagType NBTTag;
+      switch (TagType) {
+        case 0:
+          break;
+        case 1:
+          NBTTag = NBTTagByte(this->socket);
+          break;
+        case 2:
+          NBTTag = NBTTagShort(this->socket);
+          break;
+        case 3:
+          NBTTag = NBTTagInt(this->socket);
+          break;
+        case 4:
+          NBTTag = NBTTagLong(this->socket);
+          break;
+        case 5:
+          NBTTag = NBTTagFloat(this->socket);
+          break;
+        case 6:
+          NBTTag = NBTTagDouble(this->socket);
+          break;
+        case 7:
+          NBTTag = NBTTagByteArray(this->socket);
+          break;
+        case 8:
+          NBTTag = NBTTagString(this->socket);
+          break;
+        case 9:
+          NBTTag = NBTTagList(this->socket);
+          break;
+        case 10:
+          NBTTag = NBTTagCompound(this->socket);
+          break;
+        case 11:
+          NBTTag = NBTTagIntArray(this->socket);
+          break;
+        case 12:
+          NBTTag = NBTTagLongArray(this->socket);
+          break;
+        default:
+          LOG(INFO) << "Unrecognized NBT Tag ID: " << TagType;
+      }
+      NBTTag.ReadPayload();
+      NBTTag.ReadName();
+      Payload.push_back(NBTTag);
+      }
+    }
+  }
+
+  std::vector<NBTTagType> Payload;
+};
+
+struct NBTTagIntArray : NBTTagType {
+  void ReadPayload() override {
+    int size;
+    ReadData(&size, 4);
+    for (int i = 0; i < size; ++i) {
+      int c;
+      socket->ReadData(&size, 4);
+      Payload.push_back(c);
+    }
+  }
+
+  std::vector<int> Payload;
+};
+
+struct NBTTagLongArray : NBTTagType {
+  void ReadPayload() override {
+    int size;
+    ReadData(&size, 8);
+    for (int i = 0; i < size; ++i) {
+      char c;
+      socket->ReadData(&size, 2);
+      Payload.push_back(c);
+    }
+  }
+
+  std::vector<long> Payload;
+};
+*/
+
 bool StreamInput::ReadBool() {
 	unsigned char value;
 	ReadData(&value, 1);
@@ -94,7 +349,7 @@ Chat StreamInput::ReadChat() {
 	for (auto &it:json["extra"]) {
 		str += it["text"].get<std::string>();
 	}*/
-    Chat str(ReadString());
+  Chat str(ReadString());
 	return str;
 }
 
@@ -123,7 +378,7 @@ long long StreamInput::ReadVarLong() {
 }
 
 std::vector<unsigned char> StreamInput::ReadEntityMetadata() {
-    LOG(FATAL) << "Reading EntityMetadata is not implemented";
+  LOG(FATAL) << "Reading EntityMetadata is not implemented";
 	return std::vector<unsigned char>();
 }
 
@@ -137,16 +392,95 @@ SlotDataType StreamInput::ReadSlot() {
     slot.ItemCount = ReadByte();
     slot.ItemDamage = ReadShort();
 
-    if (ReadByte() != 0)
-        throw std::runtime_error("Slot data with NBT not supported");
+    //ReadNbtTag();
 
     return slot;
 }
 
+/*
 std::vector<unsigned char> StreamInput::ReadNbtTag() {
-    LOG(FATAL) << "Reading NBT is not implemented";
+    int NBTTagID = ReadByte();
+    switch (NBTTagID) {
+      case 0:
+        break;
+      case 1:
+        ReadString();
+        ReadByte();
+        //throw std::runtime_error("Slot data with NBT not supported");
+        break;
+      case 2:
+        ReadString();
+        ReadShort();
+        //throw std::runtime_error("Slot data with NBT not supported");
+        break;
+      case 3:
+        ReadString();
+        ReadInt();
+        //throw std::runtime_error("Slot data with NBT not supported");
+        break;
+      case 4:
+        ReadString();
+        ReadLong();
+        //throw std::runtime_error("Slot data with NBT not supported");
+        break;
+      case 5:
+        ReadString();
+        ReadFloat();
+        //throw std::runtime_error("Slot data with NBT not supported");
+        break;
+      case 6:
+        ReadString();
+        ReadDouble();
+        //throw std::runtime_error("Slot data with NBT not supported");
+        break;
+      case 7: {
+        ReadString();
+        int arrayLength = ReadInt();
+        ReadByteArray(arrayLength);
+        //throw std::runtime_error("Slot data with NBT not supported");
+        break;
+      }
+      case 8:
+        ReadString();
+        ReadString();
+        //throw std::runtime_error("Slot data with NBT not supported");
+        break;
+      case 9: {
+        ReadString();
+        int listType = ReadByte();
+        int listhLength = ReadInt();
+        //ReadList();
+        //throw std::runtime_error("Slot data with NBT not supported");
+        break;
+      }
+      case 10:
+        ReadString();
+        ReadNbtTag();
+        //throw std::runtime_error("Slot data with NBT not supported");
+        break;
+      case 11: {
+        ReadString();
+        int arrayLength = ReadInt();
+        //ReadIntArray(arrayLength);
+        //throw std::runtime_error("Slot data with NBT not supported");
+        break;
+      }
+      case 12: {
+        int arrayLength = ReadInt();
+        //ReadLongArray(arrayLength);
+        //throw std::runtime_error("Slot data with NBT not supported");
+        break;
+      }
+      default:
+        LOG(WARNING) << "Unknown NBT Tag ID " << NBTTagID;
+        //throw std::runtime_error("Unknown NBT Tag");
+        break;
+    }
+
+  //LOG(FATAL) << "Reading NBT is not implemented";
 	return std::vector<unsigned char>();
 }
+*/
 
 Vector StreamInput::ReadPosition() {
 	unsigned long long t = ReadLong();
@@ -171,9 +505,11 @@ unsigned char StreamInput::ReadAngle() {
 
 UUID StreamInput::ReadUUID() {
 	unsigned char buff[16];
+  LOG(INFO) << "Start Reading UUID";
 	ReadData(buff, 16);
+  LOG(INFO) << "Done Reading UUID";
 	endswap(buff, 16);
-    return UUID(buff,buff+16);
+  return UUID(buff,buff+16);
 }
 
 std::vector<unsigned char> StreamInput::ReadByteArray(size_t arrLength) {
@@ -281,9 +617,11 @@ void StreamOutput::WriteSlot(const SlotDataType &value) {
     WriteByte(0);
 }
 
+/*
 void StreamOutput::WriteNbtTag(const std::vector<unsigned char> &value) {
 	LOG(FATAL) << "Used unimplemented WriteNbtTag " << value.size();
 }
+*/
 
 void StreamOutput::WritePosition(const Vector &value) {
 	unsigned long long pos = ((value.x & 0x3FFFFFF) << 38) | ((value.y & 0xFFF) << 26) | (value.z & 0x3FFFFFF);
@@ -306,8 +644,9 @@ void StreamOutput::WriteByteArray(const std::vector<unsigned char> &value) {
 void StreamBuffer::ReadData(unsigned char *buffPtr, size_t buffLen) {
 	size_t bufferLengthLeft = buffer.data() + buffer.size() - bufferPtr;
 
-    if (bufferLengthLeft < buffLen)
-        throw std::runtime_error("Internal error: StreamBuffer reader out of data");
+  if (bufferLengthLeft < buffLen) {
+    throw std::runtime_error("Internal error: StreamBuffer reader out of data");
+  }
 	std::memcpy(buffPtr, bufferPtr, buffLen);
 	bufferPtr += buffLen;
 }

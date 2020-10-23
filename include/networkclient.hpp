@@ -25,6 +25,7 @@ class NetworkClient {
 	std::thread thread;
 	bool isRunning = false;
 	void ExecNs();
+  void UpdatePacket(std::shared_ptr<Packet> ptr);
 public:
 	NetworkClient(const std::string &address, const unsigned short port);
 	void Connect(const std::string &username);

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <SDL_net.h>
+#include <stdexcept>
 
 /**
  * Platform independent class for working with platform dependent hardware socket
